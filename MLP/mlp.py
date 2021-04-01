@@ -1,5 +1,5 @@
 import numpy as np
-import random
+import random, time
 
 class MLP(object):
     """ Multi Layer Perceptron """
@@ -169,10 +169,14 @@ if __name__ == "__main__":
     targets = np.array([[i[0] + i[1]] for i in inputs])
 
     # Create a neural network
-    neural_network = MLP(2, [5], 1)
+    neural_network = MLP(2, [3], 1)
 
     # Train the network
-    neural_network.train(inputs, targets, 100, 1)
+    start = time.time()
+    neural_network.train(inputs, targets, 100, 1.5)
+    end = time.time()
+
+    print("Training finished in {} seconds".format(end-start))
 
     # Test the network
     inputs = np.array([0.6, 0.1])
