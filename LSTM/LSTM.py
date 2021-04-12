@@ -1,12 +1,12 @@
 import numpy as np
 from random import uniform
-from .Xavier import Xavier
-from .Helper import Helper
-from .Adam import Adam
+from Xavier import Xavier
+from Helper import Helper
+from Adam import Adam
 
 class LSTM:
 
-    def __init__(self, char_to_id, id_to_char, voc_size, hd_units=80, recurrences=32,
+    def __init__(self, char_to_id, id_to_char, voc_size, hd_units=100, recurrences=25,
                  epochs=10, lr=0.001):
 
         # ~~~~~~ Mapping ~~~~~~
@@ -17,7 +17,7 @@ class LSTM:
         self.EPS = 1e-8
 
         # Init Adam Optimizer Helper
-        adam = Adam(self.EPS)
+        self.adam = Adam(self.EPS)
 
         self.voc_size = voc_size  # no. of unique characters in the training data
         self.hd_units = hd_units  # no. of units in the hidden layer
@@ -99,14 +99,14 @@ class LSTM:
         # For every weight and bias in the neural network, update the parameters
         for key in self.params:
             self.adam_params["m" + key] =  \
-                adam.update_m(self.adam_params['m'+key], self.gradients['d'+key])
+                self.adam.update_m(self.adam_params['m'+key], self.gradients['d'+key])
 
             self.adam_params['v'+key] = \
-                adam.update_v(self.adam_params['v'+key], self.gradients['d'+key])
+                self.adam.update_v(self.adam_params['v'+key], self.gradients['d'+key])
 
             # Apply bias correction for better results
             m_corrected, v_corrected = \
-                adam.bias_correction(self.adam_params['m'+key], \
+                self.adam.bias_correction(self.adam_params['m'+key], \
                     self.adam_params['v'+key], time_step)
 
             # Update the weight
@@ -173,7 +173,7 @@ class LSTM:
                     = [(y_hat - y) * v] * o_t * [1 - tanh(c_t)^2]
                     = dh_t * o_t * [1 - tanh(c_t)^2]  
         """
-        dc_t = dh * og * (1 - Helper.tanh(c) ** 2)
+        dc_t = dh_t * og * (1 - Helper.tanh(c) ** 2)
         dc_t += dc_next
 
 
@@ -184,7 +184,7 @@ class LSTM:
             dE/do_t = [dE/dh_t]*[dh_t/do_t]
                     = [dE/dh_t] * tanh(c_t)
         """
-        do_t = dh * Helper.tanh(c)
+        do_t = dh_t * Helper.tanh(c)
 
         # Derivative of the error with respect to the input gate
         """
@@ -192,7 +192,7 @@ class LSTM:
                     = [dE/dc_t]*[dc_t/di_t]
                     = [dE/dc_t] * c_bar
         """
-        di_t = dc * c_bar
+        di_t = dc_t * c_bar
 
         # Derivative of the error with respect to the candidate gate 
         """
@@ -200,7 +200,7 @@ class LSTM:
                       = [dE/dc_t]*[d_ct/dc_bar]
                       = [dE/dc_t]*i_t
         """
-        dc_bar = dc * ig
+        dc_bar = dc_t * ig
 
         # Derivative of the error with respect to the forget gate
         """
@@ -208,7 +208,7 @@ class LSTM:
                     = [dE/c_t] * [dc_t/df_t]
                     = [dE/c_t] * c_prev
         """
-        df_t = dc * c_prev
+        df_t = dc_t * c_prev
 
 
         # ~~~~~~~~ Derivatives of the error with respect to the W and b of the gates ~~~~~~~~ #
@@ -228,7 +228,7 @@ class LSTM:
                    = sum( dE/do_t * sig( wo * h_t-1 * bo ) * (1 - sig( wo * h_t-1 * bo )) * h_t-1 )
                    = sum( dE/do_t * o_t * (1 - o_t) * h_t-1 )
         """
-        dp_o = do * og * (1 - og)
+        dp_o = do_t * og * (1 - og)
         self.gradients["dWo"] += np.dot(dp_o, z.T)
         self.gradients["dbo"] += dp_o
 
@@ -238,7 +238,7 @@ class LSTM:
                    = sum( [dE/di_t] * [sig( wi * h_t-1 + bi ) * (1 - sig( wi * h_t-1 + bi )) * h_t-1] )
                    = sum( [dE/di_t] * i_t * (1 - i_t) * h_t-1 )
         """
-        dp_i = di * ig * (1 - ig)
+        dp_i = di_t * ig * (1 - ig)
         self.gradients["dWi"] += np.dot(dp_i, z.T)
         self.gradients["dbi"] += dp_i
 
@@ -257,7 +257,7 @@ class LSTM:
             dE/dwf = sum( [dE/df_t] * [df_t/dwf] )
                    = sum( [dE/df_t] * f_t * (1 - f_t) * h_t-1 )
         """
-        dp_f = df * fg * (1 - fg)
+        dp_f = df_t * fg * (1 - fg)
         self.gradients["dWf"] += np.dot(dp_f, z.T)
         self.gradients["dbf"] += dp_f
 
@@ -267,7 +267,7 @@ class LSTM:
               + np.dot(self.params["Wo"].T, dp_o))
 
         dh_prev = dz[:self.hd_units, :]
-        dc_prev = fg * dc
+        dc_prev = fg * dc_t
 
         return dh_prev, dc_prev
 

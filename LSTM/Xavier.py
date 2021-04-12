@@ -22,8 +22,10 @@ class Xavier:
     def get_forget_gate_biases(self):
         biases = np.ones((self.units, 1))
 
+        return biases
+
     def get_output_weights(self):
-        weights = np.random.randn(self.inputs + self.units) * \
+        weights = np.random.randn(self.inputs, self.units) * \
             (1/np.sqrt(self.inputs))
 
         return weights

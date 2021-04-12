@@ -12,7 +12,7 @@ class Helper(object):
     @staticmethod
     def softmax(input):
 
-        expression = np.exp(x - np.max(x))
+        expression = np.exp(input - np.max(input))
         result = expression / np.sum(expression)
 
         return result

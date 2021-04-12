@@ -30,7 +30,7 @@ class Init:
             epochs = self.epochs, lr = self.learning_rate)
 
         # Train the model
-        losses = model.train_model(data) 
+        losses = model.train_model(self.data) 
 
 
 init = Init()
