@@ -237,3 +237,5 @@ pip-selfcheck.json
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,python,git,linux,virtualenv
 
 
+mnist_model/mnist_train.csv
+mnist_model/mnist_test.csv
